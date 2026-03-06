@@ -116,19 +116,25 @@ def _register_builtin_providers() -> None:
         from src.libs.embedding.openai_embedding import OpenAIEmbedding
         EmbeddingFactory.register_provider("openai", OpenAIEmbedding)
     except ImportError:
-        pass  # OpenAI provider not available
+        pass
     
     try:
         from src.libs.embedding.azure_embedding import AzureEmbedding
         EmbeddingFactory.register_provider("azure", AzureEmbedding)
     except ImportError:
-        pass  # Azure provider not available
+        pass
     
     try:
         from src.libs.embedding.ollama_embedding import OllamaEmbedding
         EmbeddingFactory.register_provider("ollama", OllamaEmbedding)
     except ImportError:
-        pass  # Ollama provider not available
+        pass
+    
+    try:
+        from src.libs.embedding.qwen_embedding import QwenEmbedding
+        EmbeddingFactory.register_provider("qwen", QwenEmbedding)
+    except ImportError:
+        pass
 
 
 # Register providers when module is imported

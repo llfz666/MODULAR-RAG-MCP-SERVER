@@ -26,12 +26,14 @@ _DEFAULT_TRACES_PATH = resolve_path("logs/traces.jsonl")
 # ── Human-readable logger (existing) ────────────────────────────────
 
 
-def get_logger(name: str = "modular-rag", log_level: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str = "modular-rag", log_level: Optional[str] = None, use_basic_config: bool = True) -> logging.Logger:
     """Get a configured logger.
 
     Args:
         name: Logger name.
         log_level: Optional log level string (e.g., "INFO").
+        use_basic_config: If True, calls logging.basicConfig(). 
+            Set to False for MCP stdio mode to avoid stdout corruption.
 
     Returns:
         Configured logger instance.
@@ -42,11 +44,13 @@ def get_logger(name: str = "modular-rag", log_level: Optional[str] = None) -> lo
     else:
         level = logging.INFO
 
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-        stream=sys.stderr,
-    )
+    # Only call basicConfig if explicitly requested and no handlers exist
+    if use_basic_config and not logging.getLogger().handlers:
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s %(levelname)s %(name)s %(message)s",
+            stream=sys.stderr,
+        )
 
     # Suppress httpx logs (contains sensitive endpoint URLs)
     logging.getLogger("httpx").setLevel(logging.WARNING)

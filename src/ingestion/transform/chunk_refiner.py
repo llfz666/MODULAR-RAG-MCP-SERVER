@@ -16,7 +16,8 @@ from src.observability.logger import get_logger
 logger = get_logger(__name__)
 
 # Default max parallel workers for LLM calls
-DEFAULT_MAX_WORKERS = 5
+# Reduced from 5 to 3 to avoid API timeout issues
+DEFAULT_MAX_WORKERS = 3
 
 
 class ChunkRefiner(BaseTransform):

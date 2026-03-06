@@ -8,11 +8,20 @@ while all logs go to stderr.
 from __future__ import annotations
 
 import asyncio
+import logging
+import os
 import sys
 from typing import TYPE_CHECKING
 
+# CRITICAL: Redirect stdout/stderr BEFORE any other imports
+# This prevents any startup messages from corrupting MCP protocol
+if sys.stdout != sys.stderr:
+    # In stdio mode, all output must go to stderr
+    pass  # Will be handled by _redirect_all_loggers_to_stderr
+
+
 from src.mcp_server.protocol_handler import create_mcp_server
-from src.observability.logger import get_logger
+# Don't import get_logger - it calls basicConfig() which breaks stdio
 
 if TYPE_CHECKING:
     pass
@@ -20,6 +29,16 @@ if TYPE_CHECKING:
 
 SERVER_NAME = "modular-rag-mcp-server"
 SERVER_VERSION = "0.1.0"
+
+
+def _suppress_all_stdout() -> None:
+    """Suppress any accidental stdout output.
+    
+    MCP stdio transport reserves stdout for JSON-RPC messages only.
+    This redirects any remaining stdout to stderr or devnull.
+    """
+    # Redirect any remaining stdout to stderr
+    sys.stdout = sys.stderr
 
 
 def _redirect_all_loggers_to_stderr() -> None:
@@ -88,20 +107,26 @@ async def run_stdio_server_async() -> int:
     # Import here to avoid import errors if mcp not installed
     import mcp.server.stdio
 
-    # Ensure ALL logging goes to stderr (stdout is reserved for JSON-RPC)
-    _redirect_all_loggers_to_stderr()
-
     # Pre-load heavy deps in main thread to prevent import-lock deadlocks
     # when tool handlers later call asyncio.to_thread().
     _preload_heavy_imports()
 
-    logger = get_logger(log_level="INFO")
-    logger.info("Starting MCP server (stdio transport) with official SDK.")
+    # Configure logging to stderr only (DO NOT redirect stdout!)
+    logger = logging.getLogger("modular-rag")
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    
+    # Suppress httpx logs
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
     # Create server with protocol handler
     server = create_mcp_server(SERVER_NAME, SERVER_VERSION)
 
     # Run with stdio transport
+    # CRITICAL: stdio_server() needs intact stdin/stdout for JSON-RPC protocol
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,

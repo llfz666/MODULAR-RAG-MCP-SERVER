@@ -310,6 +310,21 @@ def _render_transform_stage(data: Dict[str, Any], *, trace_idx: int = 0) -> None
                 # Before / After text comparison
                 if text_before or text_after:
                     st.markdown("**Text Comparison**")
+                    
+                    # Build informative badges
+                    info_badges = []
+                    if refined_by == "llm":
+                        info_badges.append(" LLM Refined")
+                    elif refined_by == "rule":
+                        info_badges.append("📝 Rule Refined")
+                    if enriched_by == "llm":
+                        info_badges.append("✨ LLM Enriched (metadata)")
+                    elif enriched_by == "rule":
+                        info_badges.append("🏷️ Rule Enriched (metadata)")
+                    
+                    if info_badges:
+                        st.caption(" | ".join(info_badges))
+                    
                     # Compute a uniform height so both sides match
                     _max_len = max(len(text_before or ""), len(text_after or ""))
                     _h = max(150, min(_max_len // 2, 600))
@@ -325,7 +340,8 @@ def _render_transform_stage(data: Dict[str, Any], *, trace_idx: int = 0) -> None
                             key=f"transform_before_{trace_idx}_{i}",
                         )
                     with col_after:
-                        st.markdown("*After refinement + enrichment:*")
+                        st.markdown("*After refinement:*")
+                        st.caption("Note: Enrichment adds metadata (title, tags, summary), not text changes.")
                         st.text_area(
                             f"after_{i}",
                             value=text_after if text_after else "(empty)",

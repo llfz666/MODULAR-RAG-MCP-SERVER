@@ -99,6 +99,15 @@ class PdfLoader(BaseLoader):
         doc_hash = self._compute_file_hash(path)
         doc_id = f"doc_{doc_hash[:16]}"
         
+        # First, extract images using PyMuPDF (before MarkItDown parsing)
+        images_metadata = []
+        if self.extract_images and PYMUPDF_AVAILABLE:
+            try:
+                images_metadata = self._extract_images_with_pymupdf(path, doc_hash)
+                logger.info(f"Extracted {len(images_metadata)} images from {path}")
+            except Exception as e:
+                logger.warning(f"PyMuPDF image extraction failed: {e}")
+        
         # Parse PDF with MarkItDown
         try:
             result = self._markitdown.convert(str(path))
@@ -119,18 +128,11 @@ class PdfLoader(BaseLoader):
         if title:
             metadata["title"] = title
         
-        # Handle image extraction (with graceful degradation)
-        if self.extract_images:
-            try:
-                text_content, images_metadata = self._extract_and_process_images(
-                    path, text_content, doc_hash
-                )
-                if images_metadata:
-                    metadata["images"] = images_metadata
-            except Exception as e:
-                logger.warning(
-                    f"Image extraction failed for {path}, continuing with text-only: {e}"
-                )
+        # Add image metadata
+        if images_metadata:
+            metadata["images"] = images_metadata
+            # Insert image placeholders into text if not already present
+            text_content = self._insert_image_placeholders(text_content, images_metadata)
         
         return Document(
             id=doc_id,
@@ -297,6 +299,130 @@ class PdfLoader(BaseLoader):
             logger.warning(f"Image extraction failed for {pdf_path}: {e}")
             # Graceful degradation: return original text without images
             return text_content, []
+    
+    def _extract_images_with_pymupdf(
+        self,
+        pdf_path: Path,
+        doc_hash: str
+    ) -> List[Dict[str, Any]]:
+        """Extract images from PDF using PyMuPDF directly.
+        
+        This method extracts all images from the PDF and saves them
+        to the designated storage directory.
+        
+        Args:
+            pdf_path: Path to PDF file.
+            doc_hash: Document hash for image directory.
+            
+        Returns:
+            List of image metadata dictionaries.
+        """
+        if not PYMUPDF_AVAILABLE:
+            logger.warning(f"PyMuPDF not available for image extraction")
+            return []
+        
+        images_metadata = []
+        
+        try:
+            # Create image storage directory
+            image_dir = self.image_storage_dir / doc_hash
+            image_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Open PDF with PyMuPDF
+            doc = fitz.open(pdf_path)
+            
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                image_list = page.get_images(full=True)
+                
+                for img_index, img_info in enumerate(image_list):
+                    try:
+                        # Extract image
+                        xref = img_info[0]
+                        base_image = doc.extract_image(xref)
+                        image_bytes = base_image["image"]
+                        image_ext = base_image["ext"]
+                        
+                        # Generate image ID and filename
+                        image_id = self._generate_image_id(doc_hash, page_num + 1, img_index + 1)
+                        image_filename = f"{image_id}.{image_ext}"
+                        image_path = image_dir / image_filename
+                        
+                        # Save image
+                        with open(image_path, "wb") as img_file:
+                            img_file.write(image_bytes)
+                        
+                        # Get image dimensions
+                        try:
+                            img = Image.open(io.BytesIO(image_bytes))
+                            width, height = img.size
+                        except Exception:
+                            width, height = 0, 0
+                        
+                        # Convert path to be relative to project root or absolute
+                        try:
+                            relative_path = image_path.relative_to(Path.cwd())
+                        except ValueError:
+                            relative_path = image_path.absolute()
+                        
+                        # Record metadata
+                        image_metadata = {
+                            "id": image_id,
+                            "path": str(relative_path),
+                            "page": page_num + 1,
+                            "position": {
+                                "width": width,
+                                "height": height,
+                                "page": page_num + 1,
+                                "index": img_index
+                            }
+                        }
+                        images_metadata.append(image_metadata)
+                        
+                        logger.debug(f"Extracted image {image_id} from page {page_num + 1}")
+                        
+                    except Exception as e:
+                        logger.warning(f"Failed to extract image {img_index} from page {page_num + 1}: {e}")
+                        continue
+            
+            doc.close()
+            
+        except Exception as e:
+            logger.warning(f"Image extraction failed: {e}")
+        
+        return images_metadata
+    
+    def _insert_image_placeholders(
+        self,
+        text_content: str,
+        images_metadata: List[Dict[str, Any]]
+    ) -> str:
+        """Insert image placeholders into text content.
+        
+        Args:
+            text_content: Original text content from MarkItDown.
+            images_metadata: List of image metadata.
+            
+        Returns:
+            Text content with image placeholders inserted.
+        """
+        modified_text = text_content
+        
+        # Check if MarkItDown already inserted placeholders
+        existing_placeholders = set()
+        for img in images_metadata:
+            img_id = img["id"]
+            if f"[IMAGE: {img_id}]" in text_content or f"![image]" in text_content.lower():
+                existing_placeholders.add(img_id)
+        
+        # Insert placeholders for images not already in text
+        for img in images_metadata:
+            img_id = img["id"]
+            if img_id not in existing_placeholders:
+                placeholder = f"\n\n[IMAGE: {img_id}]\n\n"
+                modified_text += placeholder
+        
+        return modified_text
     
     @staticmethod
     def _generate_image_id(doc_hash: str, page: int, sequence: int) -> str:

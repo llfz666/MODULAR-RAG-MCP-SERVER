@@ -1,0 +1,74 @@
+{
+  "mcpServers": {
+    "modular-rag": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.mcp_server.server"
+      ],
+      "cwd": "e:\\code\\MODULAR-RAG-MCP-SERVER",
+      "env": {},
+      "description": "Modular RAG MCP Server - Knowledge base search and document management",
+      "tools": [
+        {
+          "name": "query_knowledge_hub",
+          "description": "Search the knowledge base for relevant documents using hybrid search (semantic + keyword). Returns formatted results with source citations.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "The search query or question to find relevant documents for."
+              },
+              "top_k": {
+                "type": "integer",
+                "description": "Maximum number of results to return.",
+                "default": 5,
+                "minimum": 1,
+                "maximum": 20
+              },
+              "collection": {
+                "type": "string",
+                "description": "Optional collection name to limit the search scope."
+              }
+            },
+            "required": ["query"]
+          }
+        },
+        {
+          "name": "list_collections",
+          "description": "List all available document collections in the knowledge base. Returns collection names, document counts, and metadata.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "include_stats": {
+                "type": "boolean",
+                "description": "Whether to include statistics (document count) for each collection.",
+                "default": true
+              }
+            },
+            "required": []
+          }
+        },
+        {
+          "name": "get_document_summary",
+          "description": "Get summary and metadata for a specific document. Returns title, summary, tags, source path, and chunk count.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "doc_id": {
+                "type": "string",
+                "description": "The document ID to retrieve summary for. Can be full doc_id (e.g., 'doc_abc123') or the hash portion."
+              },
+              "collection": {
+                "type": "string",
+                "description": "Collection name to search in. If not specified, searches the default collection."
+              }
+            },
+            "required": ["doc_id"]
+          }
+        }
+      ]
+    }
+  }
+}

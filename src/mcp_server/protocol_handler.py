@@ -8,13 +8,15 @@ This module provides the ProtocolHandler class that encapsulates:
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 from mcp import types
 from mcp.server.lowlevel import Server
 
-from src.observability.logger import get_logger
+# Don't import get_logger here - it calls basicConfig() which breaks stdio
+# Logger will be created manually in __post_init__ without basicConfig
 
 
 # JSON-RPC 2.0 Error Codes
@@ -58,8 +60,20 @@ class ProtocolHandler:
     tools: Dict[str, ToolDefinition] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Initialize logger after dataclass initialization."""
-        self._logger = get_logger(log_level="INFO")
+        """Initialize logger after dataclass initialization.
+        
+        Creates logger WITHOUT basicConfig to preserve stdio transport.
+        """
+        import logging
+        
+        self._logger = logging.getLogger(f"modular-rag.{self.server_name}")
+        # Clear any existing handlers to avoid duplicate log messages
+        self._logger.handlers = []
+        self._logger.propagate = False
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+        self._logger.addHandler(handler)
+        self._logger.setLevel(logging.INFO)
 
     def register_tool(
         self,

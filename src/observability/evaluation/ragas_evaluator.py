@@ -17,6 +17,7 @@ import logging
 from typing import Any, Dict, List, Optional, Sequence
 
 from src.libs.evaluator.base_evaluator import BaseEvaluator
+from src.libs.llm.qwen_llm import QwenLLM
 
 logger = logging.getLogger(__name__)
 
@@ -223,15 +224,22 @@ class RagasEvaluator(BaseEvaluator):
         if use_azure_llm:
             llm_client = AsyncAzureOpenAI(
                 api_key=llm_cfg.api_key,
-                azure_endpoint=llm_azure_endpoint or llm_cfg.azure_endpoint,
+                azure_endpoint=llm_cfg.azure_endpoint or llm_cfg.azure_endpoint,
                 api_version=getattr(llm_cfg, "api_version", None) or "2024-02-15-preview",
             )
         elif provider == "openai":
             llm_client = AsyncOpenAI(api_key=llm_cfg.api_key)
+        elif provider == "qwen":
+            # Qwen (DashScope) uses OpenAI-compatible API
+            base_url = getattr(llm_cfg, "base_url", None) or QwenLLM.DEFAULT_BASE_URL
+            llm_client = AsyncOpenAI(
+                api_key=llm_cfg.api_key,
+                base_url=base_url,
+            )
         else:
             raise ValueError(
                 f"Unsupported LLM provider for Ragas: '{provider}'. "
-                "Supported: azure, openai"
+                "Supported: azure, openai, qwen"
             )
 
         llm = llm_factory(llm_cfg.model, client=llm_client, max_tokens=8192)
@@ -255,10 +263,17 @@ class RagasEvaluator(BaseEvaluator):
             )
         elif emb_provider == "openai":
             emb_client = AsyncOpenAI(api_key=emb_cfg.api_key)
+        elif emb_provider == "qwen":
+            # Qwen (DashScope) uses OpenAI-compatible API for embeddings
+            base_url = getattr(emb_cfg, "base_url", None) or QwenLLM.DEFAULT_BASE_URL
+            emb_client = AsyncOpenAI(
+                api_key=emb_cfg.api_key,
+                base_url=base_url,
+            )
         else:
             raise ValueError(
                 f"Unsupported embedding provider for Ragas: '{emb_provider}'. "
-                "Supported: azure, openai"
+                "Supported: azure, openai, qwen"
             )
 
         embeddings = OpenAIEmbeddings(model=emb_cfg.model, client=emb_client)

@@ -35,7 +35,7 @@
 | 状态值 | 含义 | 如何到达 |
 |--------|------|---------|
 | `Empty` | 全空：无数据、无 Trace | `qa_bootstrap.py` 中 clear 步骤，或 Dashboard Clear All Data |
-| `Baseline` | 标准数据：default 集合(simple.pdf + with_images.pdf)、test_col 集合(complex_technical_doc.pdf)、有 Trace | `python .github/skills/qa-tester/scripts/qa_bootstrap.py` |
+| `Baseline` | 标准数据：default 集合(simple.pdf + with_images.pdf)、test_col 集合(complex_technical_doc.pdf)、有 Trace | `python .cline/skills/qa-tester/scripts/qa_bootstrap.py` |
 | `DeepSeek` | Baseline + LLM 切到 DeepSeek + Vision 关闭 | `qa_config.py apply deepseek`（需 test_credentials.yaml） |
 | `Rerank_LLM` | Baseline + LLM 重排启用 | `qa_config.py apply rerank_llm` |
 | `NoVision` | Baseline + Vision LLM 关闭 | `qa_config.py apply no_vision` |
@@ -236,7 +236,7 @@
 
 | ID | 测试标题 | 状态 | 操作步骤 | 预期现象 |
 |----|---------|------|---------|--------- |
-| K-01 | settings.yaml 切换 LLM 到 DeepSeek | DeepSeek | 1. 执行 `python .github/skills/qa-tester/scripts/qa_config.py apply deepseek`<br>2. 检查输出确认切换成功 | 输出显示 "LLM -> deepseek / deepseek-chat"，settings.yaml 已更新 |
+| K-01 | settings.yaml 切换 LLM 到 DeepSeek | DeepSeek | 1. 执行 `python .cline/skills/qa-tester/scripts/qa_config.py apply deepseek`<br>2. 检查输出确认切换成功 | 输出显示 "LLM -> deepseek / deepseek-chat"，settings.yaml 已更新 |
 | K-02 | DeepSeek LLM — CLI 查询 | DeepSeek | 1. 执行 `python scripts/query.py --query "What is hybrid search and how does it work" --verbose` | 查询成功，返回检索结果（来自 Baseline 数据）。Verbose 输出中可看到 LLM provider 为 DeepSeek |
 | K-03 | DeepSeek LLM — 摄取（Chunk Refiner） | DeepSeek | 1. 执行 `python scripts/ingest.py --path tests/fixtures/sample_documents/simple.pdf --force --verbose` | Transform 阶段使用 DeepSeek 进行 Chunk 重写，日志可见。重写后的 Chunk 内容合理、中文通顺 |
 | K-04 | DeepSeek LLM — 摄取（Metadata Enricher） | DeepSeek | 1. 同 K-03 摄取流程<br>2. 查看 Dashboard Data Browser 中的 Chunk Metadata | Metadata 中 title/summary/tags 字段由 DeepSeek 生成，内容合理 |
@@ -244,7 +244,7 @@
 | K-06 | DeepSeek LLM — Dashboard Ingestion 管理 | DeepSeek | 1. 在 Dashboard Ingestion Manager 上传 `tests/fixtures/sample_documents/chinese_technical_doc.pdf` 并摄取到 default 集合 | 进度条正常推进，Transform 阶段使用 DeepSeek LLM 完成 Chunk Refine 和 Metadata Enrich，最终成功。Data Browser 中可看到该文档 |
 | K-07 | DeepSeek LLM — 关闭 Vision LLM | DeepSeek | 1. 执行 `python scripts/ingest.py --path tests/fixtures/sample_documents/with_images.pdf --force --verbose` | 图片 Captioning 跳过（因 DeepSeek 无 Vision API），不阻塞流程。日志中显示跳过 captioning，with_images.pdf 的 Chunk 中图片引用保留但无 caption 文本 |
 | K-08 | DeepSeek LLM — LLM Rerank 模式 | DeepSeek | 1. 执行 `python scripts/query.py --query "Retrieval-Augmented Generation modular architecture" --verbose` | Rerank 阶段使用 DeepSeek LLM 进行重排序，Verbose 输出可见重排前后的顺序变化，结果来自 complex_technical_doc.pdf |
-| K-09 | DeepSeek 回退 Azure 验证 | DeepSeek | 1. 执行 `python .github/skills/qa-tester/scripts/qa_config.py restore`<br>2. 执行 `python scripts/query.py --query "Sample Document PDF loader" --verbose` | 功能恢复正常，Verbose 输出显示使用 Azure LLM，查询结果包含 simple.pdf 相关内容，验证切换回来无副作用 |
+| K-09 | DeepSeek 回退 Azure 验证 | DeepSeek | 1. 执行 `python .cline/skills/qa-tester/scripts/qa_config.py restore`<br>2. 执行 `python scripts/query.py --query "Sample Document PDF loader" --verbose` | 功能恢复正常，Verbose 输出显示使用 Azure LLM，查询结果包含 simple.pdf 相关内容，验证切换回来无副作用 |
 | K-10 | DeepSeek API Key 无效的报错 | DeepSeek | 1. 设置 `llm.provider: deepseek`，`api_key` 填入一个无效值<br>2. 执行查询 | 返回清晰的认证失败错误信息（如 401 Unauthorized），不崩溃 |
 | K-11 | DeepSeek + Azure Embedding 混合配置 | DeepSeek | 1. 保持 embedding 为 azure<br>2. 执行完整的 ingest→query 流程 | 摄取使用 Azure Embedding 生成向量 + DeepSeek LLM 做 Transform；查询使用 Azure Embedding 做向量检索 + DeepSeek 做 Rerank（如启用）。全流程跑通 |
 | K-12 | Ragas 评估使用 DeepSeek LLM | DeepSeek | 1. 在 Dashboard Evaluation Panel 选择 ragas 后端<br>2. 运行评估 | Ragas 使用 DeepSeek 作为 Judge LLM，返回评估指标。（注意：Ragas 可能对 LLM 能力有要求，观察结果是否合理） |
@@ -361,7 +361,7 @@ Copy-Item config/test_credentials.yaml.example config/test_credentials.yaml
 # 打开 config/test_credentials.yaml，将 <YOUR_DEEPSEEK_API_KEY> 替换为真实 Key
 
 # 步骤 3: 验证配置
-python .github/skills/qa-tester/scripts/qa_config.py check
+python .cline/skills/qa-tester/scripts/qa_config.py check
 ```
 
 该文件已添加到 `.gitignore`，不会被提交到 Git，可安全存储 API Key。
@@ -372,15 +372,15 @@ python .github/skills/qa-tester/scripts/qa_config.py check
 
 ```powershell
 # 查看可用 Profile
-python .github/skills/qa-tester/scripts/qa_config.py show
+python .cline/skills/qa-tester/scripts/qa_config.py show
 
 # 切换到 DeepSeek（自动备份 settings.yaml，注入 API Key）
-python .github/skills/qa-tester/scripts/qa_config.py apply deepseek
+python .cline/skills/qa-tester/scripts/qa_config.py apply deepseek
 
 # 执行测试...
 
 # 测试完成后恢复原始配置
-python .github/skills/qa-tester/scripts/qa_config.py restore
+python .cline/skills/qa-tester/scripts/qa_config.py restore
 ```
 
 | Profile 名称 | 用途 | 对应测试 | 需要 Credentials |

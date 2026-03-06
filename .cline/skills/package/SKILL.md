@@ -26,7 +26,7 @@ Dry-run → Confirm → Execute → Verify
 Show what will be removed without deleting anything:
 
 ```powershell
-python .github/skills/package/scripts/clean.py
+python .cline/skills/package/scripts/clean.py
 ```
 
 Review the output with the user. The script lists:
@@ -44,13 +44,13 @@ Before executing, summarize what will be deleted and ask the user to confirm. Of
 
 ```powershell
 # Full clean (removes everything including data)
-python .github/skills/package/scripts/clean.py --execute
+python .cline/skills/package/scripts/clean.py --execute
 
 # Keep data and logs
-python .github/skills/package/scripts/clean.py --execute --keep-data
+python .cline/skills/package/scripts/clean.py --execute --keep-data
 
 # Skip secret sanitization
-python .github/skills/package/scripts/clean.py --execute --no-sanitize
+python .cline/skills/package/scripts/clean.py --execute --no-sanitize
 ```
 
 ## Step 4: Verify
@@ -92,7 +92,7 @@ Report results to user.
 | Stale artifacts | `nonexistent_traces.jsonl/` |
 | Config backups | `settings.yaml.bak`, `settings.yaml.qa_backup` |
 | Test artifacts | `.claude/skills/test-skill/`, `test_data/chroma/` |
-| Skill caches | `.github/skills/auto-coder/.spec_hash`, `.claude/skills/auto-coder/.spec_hash` |
+| Skill caches | `.cline/skills/auto-coder/.spec_hash`, `.claude/skills/auto-coder/.spec_hash` |
 
 ## What Gets Sanitized (not removed)
 

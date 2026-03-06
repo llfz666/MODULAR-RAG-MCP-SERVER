@@ -2,10 +2,10 @@
 """QA Config — Switch settings.yaml profiles for testing different configurations.
 
 Usage:
-    python .github/skills/qa-tester/scripts/qa_config.py show          # List profiles
-    python .github/skills/qa-tester/scripts/qa_config.py check         # Verify credentials
-    python .github/skills/qa-tester/scripts/qa_config.py apply <name>  # Apply a profile
-    python .github/skills/qa-tester/scripts/qa_config.py restore       # Restore backup
+    python .cline/skills/qa-tester/scripts/qa_config.py show          # List profiles
+    python .cline/skills/qa-tester/scripts/qa_config.py check         # Verify credentials
+    python .cline/skills/qa-tester/scripts/qa_config.py apply <name>  # Apply a profile
+    python .cline/skills/qa-tester/scripts/qa_config.py restore       # Restore backup
 
 Profiles:
     deepseek         LLM → DeepSeek + Vision disabled (needs test_credentials.yaml)

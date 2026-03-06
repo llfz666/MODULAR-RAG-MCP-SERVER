@@ -31,13 +31,19 @@ def _register_vision_providers() -> None:
         from src.libs.llm.llm_factory import LLMFactory
         LLMFactory.register_vision_provider("azure", AzureVisionLLM)
     except ImportError:
-        # Provider not yet implemented, skip registration
         pass
     
     try:
         from src.libs.llm.openai_vision_llm import OpenAIVisionLLM
         from src.libs.llm.llm_factory import LLMFactory
         LLMFactory.register_vision_provider("openai", OpenAIVisionLLM)
+    except ImportError:
+        pass
+    
+    try:
+        from src.libs.llm.qwen_vision_llm import QwenVisionLLM
+        from src.libs.llm.llm_factory import LLMFactory
+        LLMFactory.register_vision_provider("qwen", QwenVisionLLM)
     except ImportError:
         pass
 

@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "modular-rag-mcp-server": {
+      "command": "E:\\Anaconda\\python.exe",
+      "args": [
+        "-u",
+        "E:\\code\\MODULAR-RAG-MCP-SERVER\\.cline\\mcp_server_wrapper.py"
+      ],
+      "cwd": "E:\\code\\MODULAR-RAG-MCP-SERVER",
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONIOENCODING": "utf-8"
+      },
+      "disabled": false,
+      "autoApprove": false,
+      "timeout": 300
+    }
+  }
+}
