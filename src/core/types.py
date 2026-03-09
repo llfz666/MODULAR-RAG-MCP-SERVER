@@ -129,7 +129,7 @@ class Chunk:
         """Validate required metadata fields."""
         if "source_path" not in self.metadata:
             raise ValueError("Chunk metadata must contain 'source_path'")
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return asdict(self)
