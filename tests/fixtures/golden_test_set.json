@@ -1,36 +1,89 @@
 {
   "description": "Golden test set for Modular RAG MCP Server evaluation. Contains test queries with expected chunk IDs for IR metrics and optional reference answers for LLM-as-Judge metrics.",
-  "version": "1.0",
+  "version": "1.1",
   "test_cases": [
     {
       "query": "What is Modular RAG?",
-      "expected_chunk_ids": [],
-      "expected_sources": [],
-      "reference_answer": "Modular RAG is a Retrieval-Augmented Generation system built with modular, pluggable components that can be configured and swapped independently."
+      "expected_chunk_ids": [
+        "doc_c3f8e9a1b2d4_chunk_001",
+        "doc_c3f8e9a1b2d4_chunk_002",
+        "doc_a7b5c2d8e9f1_chunk_001"
+      ],
+      "expected_sources": ["sample.txt", "simple.pdf"],
+      "reference_answer": "Modular RAG is a Retrieval-Augmented Generation system built with modular, pluggable components that can be configured and swapped independently.",
+      "notes": "Tests retrieval of RAG concept chunks"
     },
     {
       "query": "How to configure Azure OpenAI?",
-      "expected_chunk_ids": [],
-      "expected_sources": [],
-      "reference_answer": "Configure Azure OpenAI by setting the provider to 'azure' in settings.yaml, along with the deployment_name, azure_endpoint, api_version, and api_key fields."
+      "expected_chunk_ids": [
+        "doc_c3f8e9a1b2d4_chunk_003",
+        "doc_c3f8e9a1b2d4_chunk_004"
+      ],
+      "expected_sources": ["sample.txt"],
+      "reference_answer": "Configure Azure OpenAI by setting the provider to 'azure' in settings.yaml, along with the deployment_name, azure_endpoint, api_version, and api_key fields.",
+      "notes": "Tests retrieval of LLM configuration chunks"
     },
     {
       "query": "What is hybrid search and how does it work?",
-      "expected_chunk_ids": [],
-      "expected_sources": [],
-      "reference_answer": "Hybrid search combines dense retrieval (semantic embeddings) and sparse retrieval (BM25 keyword matching), then fuses results using Reciprocal Rank Fusion (RRF) for better recall."
+      "expected_chunk_ids": [
+        "doc_a7b5c2d8e9f1_chunk_002",
+        "doc_a7b5c2d8e9f1_chunk_003",
+        "doc_b4d7e2f5a8c1_chunk_001"
+      ],
+      "expected_sources": ["blogger_intro.pdf"],
+      "reference_answer": "Hybrid search combines dense retrieval (semantic embeddings) and sparse retrieval (BM25 keyword matching), then fuses results using Reciprocal Rank Fusion (RRF) for better recall.",
+      "notes": "Tests retrieval of search/fusion chunks"
     },
     {
       "query": "Explain the chunking strategy",
-      "expected_chunk_ids": [],
-      "expected_sources": [],
-      "reference_answer": "Documents are split into chunks using configurable strategies (recursive, semantic, or fixed-length). Chunks are then refined and enriched with metadata before storage."
+      "expected_chunk_ids": [
+        "doc_c3f8e9a1b2d4_chunk_005",
+        "doc_c3f8e9a1b2d4_chunk_006"
+      ],
+      "expected_sources": ["sample.txt"],
+      "reference_answer": "Documents are split into chunks using configurable strategies (recursive, semantic, or fixed-length). Chunks are then refined and enriched with metadata before storage.",
+      "notes": "Tests retrieval of chunking/pipeline chunks"
     },
     {
       "query": "What evaluation metrics are supported?",
-      "expected_chunk_ids": [],
-      "expected_sources": [],
-      "reference_answer": "The system supports hit_rate, MRR (custom metrics), and Ragas LLM-as-Judge metrics including faithfulness, answer_relevancy, and context_precision."
+      "expected_chunk_ids": [
+        "doc_a7b5c2d8e9f1_chunk_004",
+        "doc_a7b5c2d8e9f1_chunk_005",
+        "doc_b4d7e2f5a8c1_chunk_002"
+      ],
+      "expected_sources": ["simple.pdf"],
+      "reference_answer": "The system supports hit_rate, MRR (custom metrics), and Ragas LLM-as-Judge metrics including faithfulness, answer_relevancy, and context_precision.",
+      "notes": "Tests retrieval of evaluation metrics chunks"
+    },
+    {
+      "query": "How does the ingestion pipeline work?",
+      "expected_chunk_ids": [
+        "doc_c3f8e9a1b2d4_chunk_007",
+        "doc_c3f8e9a1b2d4_chunk_008"
+      ],
+      "expected_sources": ["sample.txt"],
+      "reference_answer": "The ingestion pipeline loads documents, splits them into chunks, generates embeddings, and stores them in the vector database.",
+      "notes": "Tests retrieval of pipeline-related chunks"
+    },
+    {
+      "query": "What embedding models are supported?",
+      "expected_chunk_ids": [
+        "doc_b4d7e2f5a8c1_chunk_003",
+        "doc_b4d7e2f5a8c1_chunk_004"
+      ],
+      "expected_sources": ["blogger_intro.pdf"],
+      "reference_answer": "The system supports OpenAI, Azure, Ollama, and Qwen embedding providers with configurable model selection.",
+      "notes": "Tests retrieval of embedding configuration chunks"
+    },
+    {
+      "query": "How to use the reranker component?",
+      "expected_chunk_ids": [
+        "doc_a7b5c2d8e9f1_chunk_006",
+        "doc_b4d7e2f5a8c1_chunk_005"
+      ],
+      "expected_sources": ["simple.pdf", "blogger_intro.pdf"],
+      "reference_answer": "The reranker component can be configured in settings.yaml with provider options including cross_encoder and llm-based reranking.",
+      "notes": "Tests retrieval of reranker configuration chunks"
     }
   ]
 }
