@@ -49,13 +49,19 @@ def render() -> None:
         )
 
     # Show info/warning based on selected backend
-    if backend in ("custom", "composite"):
+    if backend == "custom":
+        st.success(
+            "支持 hit_rate 和 MRR 指标。"
+            "Golden Test Set 已包含 `expected_chunk_ids` 作为 ground truth。"
+            "适合快速评估检索质量。",
+            icon="✨",
+        )
+    elif backend == "composite":
         st.info(
-            "ℹ️ **Custom Evaluator** 尚未完成数据集准备，当前仅为预留接口。"
-            "Custom Evaluator 需要在 Golden Test Set 中填写 `expected_chunk_ids` "
-            "作为 ground truth 才能计算 hit_rate / MRR 指标。"
-            "目前建议使用 **ragas** 后端进行评估。",
-            icon="🚧",
+            "ℹ️ **Composite Evaluator** 同时运行 custom 和 ragas 评估器。"
+            "Custom Evaluator 计算 hit_rate / MRR 指标。"
+            "Ragas Evaluator 计算 faithfulness / answer_relevancy 等 LLM-as-Judge 指标。",
+            icon="📊",
         )
 
     with col2:
@@ -405,7 +411,7 @@ def _render_history() -> None:
             }
         )
 
-    st.dataframe(rows, use_container_width=True)
+    st.dataframe(rows, width="stretch")
 
 
 def _save_to_history(report: Dict[str, Any]) -> None:

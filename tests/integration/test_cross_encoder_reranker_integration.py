@@ -24,7 +24,7 @@ import pytest
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.core.settings import Settings
+from src.core.settings import Settings, load_settings
 from src.libs.reranker.cross_encoder_reranker import (
     CrossEncoderRerankError,
     CrossEncoderReranker,
@@ -43,14 +43,57 @@ except (ImportError, OSError):
 pytest.importorskip("sentence_transformers", reason="sentence-transformers or torch not available")
 
 
+def _is_model_available(model_name: str) -> bool:
+    """Check if model is available locally (cached)."""
+    import os
+    from pathlib import Path
+    from huggingface_hub import scan_cache_dir
+    
+    try:
+        cache_dir = scan_cache_dir()
+        for repo in cache_dir.repos:
+            if model_name in repo.repo_id:
+                return True
+        return False
+    except Exception:
+        return False
+
+
+MODEL_AVAILABLE = _is_model_available("cross-encoder/ms-marco-MiniLM-L-6-v2")
+
+# Skip marker for all tests in this module
+pytestmark = pytest.mark.skipif(
+    not MODEL_AVAILABLE,
+    reason="Cross-Encoder model 'cross-encoder/ms-marco-MiniLM-L-6-v2' not cached locally. Run once with internet access first."
+)
+
+
 @pytest.fixture(scope="module")
 def real_settings():
     """Create real settings for integration testing."""
-    settings = Settings()
+    try:
+        # Load from config/settings.yaml
+        settings = load_settings()
+    except Exception:
+        # Fallback: create minimal settings for testing
+        from src.core.settings import (
+            LLMSettings, EmbeddingSettings, VectorStoreSettings,
+            RetrievalSettings, RerankSettings, EvaluationSettings,
+            ObservabilitySettings
+        )
+        settings = Settings(
+            llm=LLMSettings(provider="openai", model="gpt-3.5-turbo", temperature=0.7, max_tokens=1024),
+            embedding=EmbeddingSettings(provider="openai", model="text-embedding-ada-002", dimensions=1536),
+            vector_store=VectorStoreSettings(provider="chroma", persist_directory="./data/chroma", collection_name="test"),
+            retrieval=RetrievalSettings(dense_top_k=5, sparse_top_k=5, fusion_top_k=10, rrf_k=60),
+            rerank=RerankSettings(enabled=True, provider="cross_encoder", model="cross-encoder/ms-marco-MiniLM-L-6-v2", top_k=10),
+            evaluation=EvaluationSettings(enabled=True, provider="ragas", metrics=["context_precision", "answer_relevancy"]),
+            observability=ObservabilitySettings(log_level="INFO", trace_enabled=False, trace_file="./logs/trace.jsonl", structured_logging=True),
+        )
     # Override rerank settings for cross-encoder testing
-    settings.rerank.model = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    settings.rerank.enabled = True
-    settings.rerank.provider = "cross_encoder"
+    object.__setattr__(settings.rerank, 'model', "cross-encoder/ms-marco-MiniLM-L-6-v2")
+    object.__setattr__(settings.rerank, 'enabled', True)
+    object.__setattr__(settings.rerank, 'provider', "cross_encoder")
     return settings
 
 
@@ -213,7 +256,7 @@ class TestCrossEncoderEdgeCases:
     
     def test_empty_candidates_raises(self, loaded_reranker):
         """Test that empty candidates list raises ValueError."""
-        with pytest.raises(ValueError, match="Candidates cannot be empty"):
+        with pytest.raises(ValueError, match="Candidates list cannot be empty"):
             loaded_reranker.rerank("query", [])
     
     def test_invalid_top_k_raises(self, loaded_reranker, sample_test_candidates):

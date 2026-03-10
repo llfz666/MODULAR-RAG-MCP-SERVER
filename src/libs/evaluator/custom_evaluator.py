@@ -128,6 +128,10 @@ class CustomEvaluator(BaseEvaluator):
                         f"Expected one of {', '.join(self._ID_FIELDS)}"
                     )
                 continue
+            # Check for chunk_id field (for RetrievalResult dataclass)
+            if hasattr(item, "chunk_id"):
+                ids.append(str(getattr(item, "chunk_id")))
+                continue
             if hasattr(item, "id"):
                 ids.append(str(getattr(item, "id")))
                 continue

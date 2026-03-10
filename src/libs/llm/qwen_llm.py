@@ -164,8 +164,8 @@ class QwenLLM(BaseLLM):
         }
         
         try:
-            # Increased timeout to 120 seconds for slower API responses
-            with httpx.Client(timeout=120.0) as client:
+            # Increased timeout to 300 seconds (5 minutes) for slower API responses
+            with httpx.Client(timeout=300.0) as client:
                 response = client.post(url, json=payload, headers=headers)
                 
                 if response.status_code != 200:
@@ -177,7 +177,8 @@ class QwenLLM(BaseLLM):
                 return response.json()
         except httpx.TimeoutException as e:
             raise QwenLLMError(
-                f"[Qwen] Request timed out after 120 seconds"
+                f"[Qwen] Request timed out after 300 seconds (5 minutes). "
+                "Consider reducing batch size or using a faster model."
             ) from e
         except httpx.RequestError as e:
             raise QwenLLMError(
