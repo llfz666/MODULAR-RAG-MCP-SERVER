@@ -6,7 +6,7 @@
 
 | 模块 | 状态 | 测试 | 说明 |
 |------|------|------|------|
-| **Custom Evaluator** | ✅ 完成 | ✅ 14/14 通过 | 支持 hit_rate 和 MRR 指标 |
+| **Custom Evaluator** | ✅ 完成 | ✅ 16/16 通过 | 支持 hit_rate 和 MRR 指标 |
 | **Cross-Encoder Reranker** | ✅ 完成 | ✅ 13/13 通过 | 使用 `cross-encoder/ms-marco-MiniLM-L-6-v2` 模型 |
 
 ---
@@ -290,7 +290,13 @@ SUPPORTED_MODELS = [
 ### Custom Evaluator 测试结果
 
 ```
-tests/integration/test_custom_evaluator_integration.py - 14 passed
+tests/unit/test_custom_evaluator.py - 16 passed
+
+测试覆盖:
+- 基础指标计算（hit_rate, mrr）
+- 边界条件（首位命中、末位命中、单一检索）
+- 错误处理（空查询、空候选、不支持的指标）
+- EvaluatorFactory 功能（创建、禁用、注册）
 ```
 
 ### Cross-Encoder Reranker 测试结果
