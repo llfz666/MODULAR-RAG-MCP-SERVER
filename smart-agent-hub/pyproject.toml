@@ -30,6 +30,7 @@ mcp = [
 ]
 dashboard = [
     "streamlit>=1.28",
+    "pandas>=2.0",
 ]
 all = [
     "smart-agent-hub[dev,mcp,dashboard]",
