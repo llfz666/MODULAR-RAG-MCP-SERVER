@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from src.core.settings import SettingsError, load_settings
-from src.observability.logger import get_logger
+from src.mcp_server.server import run_stdio_server
 
 
 def main() -> int:
@@ -19,7 +19,8 @@ def main() -> int:
     Returns:
         int: Exit code (0 for success, non-zero for failure)
     """
-    print("Modular RAG MCP Server - Starting...")
+    # CRITICAL: Do NOT print to stdout - MCP protocol reserves stdout for JSON-RPC messages
+    # All logging must go to stderr
 
     settings_path = Path("config/settings.yaml")
     try:
@@ -28,10 +29,8 @@ def main() -> int:
         print(f"Configuration error: {exc}", file=sys.stderr)
         return 1
 
-    logger = get_logger(log_level=settings.observability.log_level)
-    logger.info("Settings loaded successfully.")
-    logger.info("MCP Server will be implemented in Phase E.")
-    return 0
+    # Run the MCP stdio server
+    return run_stdio_server()
 
 
 if __name__ == "__main__":

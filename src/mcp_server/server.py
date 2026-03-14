@@ -124,15 +124,30 @@ async def run_stdio_server_async() -> int:
 
     # Create server with protocol handler
     server = create_mcp_server(SERVER_NAME, SERVER_VERSION)
+    
+    logger.info("MCP server starting...")
 
     # Run with stdio transport
     # CRITICAL: stdio_server() needs intact stdin/stdout for JSON-RPC protocol
-    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-        await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options(),
-        )
+    try:
+        async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+            logger.info("stdio transport connected")
+            # Use create_task to ensure server runs properly
+            server_task = asyncio.create_task(
+                server.run(
+                    read_stream,
+                    write_stream,
+                    server.create_initialization_options(),
+                )
+            )
+            
+            # Wait for server to complete
+            await server_task
+    except Exception as e:
+        logger.error(f"MCP server error: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return 1
 
     logger.info("MCP server shutting down.")
     return 0

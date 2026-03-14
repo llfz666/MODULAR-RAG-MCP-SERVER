@@ -33,12 +33,16 @@ DB_PATH = "data/db/agent_sessions.db"
 LOG_PATH = "data/logs/agent_traces.jsonl"
 MEMORY_PATH = "data/logs/long_term_memory.jsonl"
 
+# Configure custom port to avoid conflict with RAG Dashboard (port 8501)
+# Run with: streamlit run dashboard/app.py --server.port 8502
+
 st.set_page_config(
     page_title="Smart Agent Hub Dashboard",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 
 
 # ============================================================================
@@ -226,9 +230,8 @@ def get_session_stats(db_path: str) -> dict[str, Any]:
 def render_stats_card(title: str, value: str | int, icon: str = "📊") -> None:
     """Render a statistics card."""
     st.metric(
-        label=icon,
-        value=value,
         label=title,
+        value=value,
     )
 
 

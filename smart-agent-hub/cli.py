@@ -80,13 +80,35 @@ async def run_agent(
     # Build MCP server configs from settings
     mcp_server_configs = {}
     if hasattr(settings, 'mcp_servers'):
-        for name, server_config in settings.mcp_servers.items():
-            if server_config.get('enabled', True):
-                mcp_server_configs[name] = {
-                    "command": server_config["command"],
-                    "args": server_config.get("args", []),
-                    "cwd": server_config.get("cwd", "."),
-                    "timeout": server_config.get("timeout", 60),
+        # MCPServersSettings is a Pydantic model, access fields directly
+        mcp_servers = settings.mcp_servers
+        
+        # Check for rag_server field
+        if hasattr(mcp_servers, 'rag_server') and mcp_servers.rag_server:
+            server_config = mcp_servers.rag_server
+            if server_config.enabled:
+                # Resolve the cwd path to absolute path
+                cwd_path = Path(server_config.cwd)
+                if not cwd_path.is_absolute():
+                    # Resolve relative to this CLI file's parent directory
+                    cwd_path = (project_root / cwd_path).resolve()
+                
+                # Verify the path exists and is a directory
+                if not cwd_path.exists():
+                    click.echo(f"❌ 错误：路径不存在：{str(cwd_path)}")
+                    click.echo(f"   请检查配置文件中的 cwd 设置")
+                    sys.exit(1)
+                
+                if not cwd_path.is_dir():
+                    click.echo(f"❌ 错误：路径不是目录：{str(cwd_path)}")
+                    click.echo(f"   请检查配置文件中的 cwd 设置")
+                    sys.exit(1)
+                
+                mcp_server_configs['rag_server'] = {
+                    "command": server_config.command,
+                    "args": server_config.args,
+                    "cwd": str(cwd_path),
+                    "timeout": server_config.timeout,
                 }
 
     # Create agent
