@@ -29,8 +29,9 @@ try:
     from pptx.shapes.base import BaseShape
     from pptx.shapes.picture import Picture
     from pptx.shapes.autoshape import Shape as AutoShape
-    from pptx.shapes.placeholder import Placeholder
     from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+    # Note: Placeholder class import path changed in python-pptx 1.0+
+    # We use placeholder_format.type attribute instead of importing Placeholder
     PPTX_AVAILABLE = True
 except ImportError:
     PPTX_AVAILABLE = False

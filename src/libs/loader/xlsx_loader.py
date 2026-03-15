@@ -310,7 +310,9 @@ class XlsxLoader(BaseLoader):
                 }
                 
                 # Extract formula (CRITICAL for understanding logic)
-                if self.extract_formulas and cell.has_formula:
+                # Note: In read-only mode, cell is ReadOnlyCell which doesn't have has_formula attribute
+                # We check if value starts with '=' to detect formulas
+                if self.extract_formulas:
                     formula = cell.value
                     if formula and isinstance(formula, str) and formula.startswith('='):
                         cell_repr['formula'] = formula
@@ -447,20 +449,26 @@ class XlsxLoader(BaseLoader):
             if merged_info['is_top_left']:
                 info['value'] = merged_info['value']
         
-        # Extract formula
-        if self.extract_formulas and cell.has_formula:
-            info['formula'] = cell.value
+        # Extract formula (read-only mode doesn't have has_formula attribute)
+        if self.extract_formulas:
+            cell_value = cell.value
+            if cell_value and isinstance(cell_value, str) and cell_value.startswith('='):
+                info['formula'] = cell_value
         
         # Extract formatting
         if self.extract_formatting:
-            if cell.font:
-                info['font'] = {
-                    'bold': cell.font.bold,
-                    'italic': cell.font.italic,
-                    'color': str(cell.font.color.rgb) if cell.font.color and cell.font.color.rgb else None,
-                }
-            if cell.fill:
-                info['fill'] = str(cell.fill.fgColor.rgb) if cell.fill.fgColor and cell.fill.fgColor.rgb else None
+            try:
+                if cell.font:
+                    info['font'] = {
+                        'bold': cell.font.bold,
+                        'italic': cell.font.italic,
+                        'color': str(cell.font.color.rgb) if cell.font.color and cell.font.color.rgb else None,
+                    }
+                if cell.fill:
+                    info['fill'] = str(cell.fill.fgColor.rgb) if cell.fill.fgColor and cell.fill.fgColor.rgb else None
+            except Exception:
+                # Formatting info may not be available in read-only mode
+                pass
         
         return info
     
@@ -486,26 +494,28 @@ class XlsxLoader(BaseLoader):
             for col_idx in range(1, max_col + 1):
                 cell = ws.cell(row=row_idx, column=col_idx)
                 
-                if cell.has_formula and cell.value:
-                    formula = str(cell.value)
-                    if formula.startswith('='):
-                        col_letter = get_column_letter(col_idx)
-                        cell_addr = f"{col_letter}{row_idx}"
-                        
-                        # Try to get computed value
-                        computed_value = None
-                        try:
-                            # For read-only workbooks, we need to recalculate
-                            # This is a simplified approach
-                            computed_value = cell.value
-                        except Exception:
-                            pass
-                        
-                        formulas.append({
-                            'cell': cell_addr,
-                            'formula': formula,
-                            'value': computed_value,
-                        })
+                # Note: In read-only mode, cell is ReadOnlyCell which doesn't have has_formula attribute
+                # We check if value starts with '=' to detect formulas
+                cell_value = cell.value
+                if cell_value and isinstance(cell_value, str) and cell_value.startswith('='):
+                    formula = str(cell_value)
+                    col_letter = get_column_letter(col_idx)
+                    cell_addr = f"{col_letter}{row_idx}"
+                    
+                    # Try to get computed value
+                    computed_value = None
+                    try:
+                        # For read-only workbooks, we need to recalculate
+                        # This is a simplified approach
+                        computed_value = cell_value
+                    except Exception:
+                        pass
+                    
+                    formulas.append({
+                        'cell': cell_addr,
+                        'formula': formula,
+                        'value': computed_value,
+                    })
         
         return formulas
     

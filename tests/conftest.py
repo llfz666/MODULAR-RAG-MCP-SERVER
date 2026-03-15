@@ -4,10 +4,15 @@ This module contains pytest configuration and fixtures that are shared
 across all test modules.
 """
 
+import os
 import sys
 from pathlib import Path
 
 import pytest
+
+# Disable PaddleX model source check to avoid initialization conflicts
+# This prevents "PDX has already been initialized" errors during tests
+os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 
 # Add the project root to the Python path
 PROJECT_ROOT = Path(__file__).parent.parent

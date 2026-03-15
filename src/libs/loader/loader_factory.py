@@ -31,6 +31,9 @@ from src.libs.loader.pdf_loader import PdfLoader
 from src.libs.loader.docx_loader import DocxLoader
 from src.libs.loader.pptx_loader import PptxLoader
 from src.libs.loader.xlsx_loader import XlsxLoader
+from src.libs.loader.advanced_pdf_loader import AdvancedPdfLoader
+from src.libs.loader.enhanced_pptx_loader import EnhancedPptxLoader
+from src.libs.loader.video_subtitle_loader import VideoSubtitleLoader
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +42,23 @@ logger = logging.getLogger(__name__)
 LOADER_REGISTRY: Dict[str, Type[BaseLoader]] = {
     '.pdf': PdfLoader,
     '.docx': DocxLoader,
-    '.doc': DocxLoader,  # Note: .doc may need different handling
+    '.doc': DocxLoader,  # Note: .doc may need different loader
     '.pptx': PptxLoader,
     '.xlsx': XlsxLoader,
     '.xlsm': XlsxLoader,
+    # Video/Audio files
+    '.mp4': VideoSubtitleLoader,
+    '.avi': VideoSubtitleLoader,
+    '.mkv': VideoSubtitleLoader,
+    '.mov': VideoSubtitleLoader,
+    '.mp3': VideoSubtitleLoader,
+    '.wav': VideoSubtitleLoader,
+}
+
+# Advanced loaders with enhanced features (Layout Analysis, Image OCR, etc.)
+ADVANCED_LOADER_REGISTRY: Dict[str, Type] = {
+    '.pdf': AdvancedPdfLoader,  # With layout analysis and table recognition
+    '.pptx': EnhancedPptxLoader,  # With image OCR support
 }
 
 
@@ -60,12 +76,15 @@ class DocumentLoaderFactory:
     def create_loader(
         cls,
         file_path: str | Path,
+        use_advanced: bool = False,
         **loader_kwargs
     ) -> BaseLoader:
         """Create a loader for the given file type.
         
         Args:
             file_path: Path to document file.
+            use_advanced: Use advanced loader with enhanced features
+                         (Layout Analysis, Table Recognition, Image OCR).
             **loader_kwargs: Keyword arguments passed to loader constructor.
             
         Returns:
@@ -85,8 +104,12 @@ class DocumentLoaderFactory:
                 f"Consider converting to .docx for better results."
             )
         
-        # Get loader class
-        loader_class = LOADER_REGISTRY.get(ext)
+        # Check for advanced loader
+        if use_advanced and ext in ADVANCED_LOADER_REGISTRY:
+            loader_class = ADVANCED_LOADER_REGISTRY[ext]
+            logger.info(f"Using advanced loader: {loader_class.__name__}")
+        else:
+            loader_class = LOADER_REGISTRY.get(ext)
         
         if loader_class is None:
             supported = ', '.join(LOADER_REGISTRY.keys())
@@ -207,6 +230,7 @@ def load_pdf(
     extract_images: bool = True,
     enable_ocr: bool = True,
     ocr_backend: str = 'rapid',
+    use_advanced: bool = False,
     **kwargs
 ) -> Document:
     """Load a PDF file with optional OCR.
@@ -216,16 +240,174 @@ def load_pdf(
         extract_images: Whether to extract images.
         enable_ocr: Whether to enable OCR for scanned PDFs.
         ocr_backend: OCR backend ('paddle', 'rapid', 'tesseract').
-        **kwargs: Additional arguments for PdfLoader.
+        use_advanced: Use AdvancedPdfLoader with Layout Analysis.
+        **kwargs: Additional arguments for loader.
         
     Returns:
         Parsed Document object.
     """
-    loader = PdfLoader(
-        extract_images=extract_images,
-        enable_ocr=enable_ocr,
-        ocr_backend=ocr_backend,
+    if use_advanced:
+        loader = AdvancedPdfLoader(
+            use_ocr=enable_ocr,
+            ocr_lang='ch' if ocr_backend == 'paddle' else 'en',
+            **kwargs
+        )
+    else:
+        loader = PdfLoader(
+            extract_images=extract_images,
+            enable_ocr=enable_ocr,
+            ocr_backend=ocr_backend,
+            **kwargs
+        )
+    return loader.load(file_path)
+
+
+def load_pdf_advanced(
+    file_path: str | Path,
+    use_layout_analysis: bool = True,
+    use_table_recognition: bool = True,
+    use_ocr: bool = True,
+    ocr_lang: str = 'ch',
+    use_gpu: bool = False,
+    detect_code_blocks: bool = True,
+    **kwargs
+) -> Document:
+    """Load a PDF file with advanced features.
+    
+    This uses AdvancedPdfLoader with:
+    - Layout Analysis (布局分析) for multi-column detection
+    - Table Recognition (表格识别) for structured data
+    - OCR Fusion with PaddleOCR
+    - Code Block Detection
+    
+    Args:
+        file_path: Path to PDF file.
+        use_layout_analysis: Enable layout analysis.
+        use_table_recognition: Enable table recognition.
+        use_ocr: Enable OCR support.
+        ocr_lang: OCR language ('ch' or 'en').
+        use_gpu: Use GPU acceleration.
+        detect_code_blocks: Auto-detect code blocks.
+        **kwargs: Additional arguments.
+        
+    Returns:
+        Parsed Document object with structured content.
+    """
+    loader = AdvancedPdfLoader(
+        use_layout_analysis=use_layout_analysis,
+        use_table_recognition=use_table_recognition,
+        use_ocr=use_ocr,
+        ocr_lang=ocr_lang,
+        use_gpu=use_gpu,
+        detect_code_blocks=detect_code_blocks,
         **kwargs
+    )
+    return loader.load(file_path)
+
+
+def load_pptx(
+    file_path: str | Path,
+    extract_notes: bool = True,
+    use_advanced: bool = False,
+    **kwargs
+) -> Document:
+    """Load a PPTX file with speaker notes.
+    
+    Args:
+        file_path: Path to PPTX file.
+        extract_notes: Whether to extract speaker notes (CRITICAL).
+        use_advanced: Use EnhancedPptxLoader with image OCR.
+        **kwargs: Additional arguments for loader.
+        
+    Returns:
+        Parsed Document object.
+    """
+    if use_advanced:
+        loader = EnhancedPptxLoader(
+            extract_notes=extract_notes,
+            ocr_images=True,
+            **kwargs
+        )
+    else:
+        loader = PptxLoader(
+            extract_notes=extract_notes,
+            **kwargs
+        )
+    return loader.load(file_path)
+
+
+def load_pptx_enhanced(
+    file_path: str | Path,
+    extract_notes: bool = True,
+    extract_images: bool = True,
+    ocr_images: bool = True,
+    ocr_lang: str = 'ch',
+    use_gpu: bool = False,
+    **kwargs
+) -> Document:
+    """Load a PPTX file with enhanced image OCR.
+    
+    This uses EnhancedPptxLoader with:
+    - Speaker Notes extraction (演讲者备注)
+    - Image extraction from slides
+    - OCR on all images to extract embedded text
+    - Chart and diagram text extraction
+    
+    Args:
+        file_path: Path to PPTX file.
+        extract_notes: Extract speaker notes.
+        extract_images: Extract embedded images.
+        ocr_images: Perform OCR on images.
+        ocr_lang: OCR language.
+        use_gpu: Use GPU for OCR.
+        **kwargs: Additional arguments.
+        
+    Returns:
+        Parsed Document object with OCR results.
+    """
+    loader = EnhancedPptxLoader(
+        extract_notes=extract_notes,
+        extract_images=extract_images,
+        ocr_images=ocr_images,
+        ocr_lang=ocr_lang,
+        use_gpu=use_gpu,
+        **kwargs
+    )
+    return loader.load(file_path)
+
+
+def load_video(
+    file_path: str | Path,
+    extract_subtitles: bool = True,
+    transcribe_audio: bool = True,
+    whisper_model: str = 'base',
+    language: str = 'zh',
+    semantic_segmentation: bool = True,
+) -> Dict[str, Any]:
+    """Load a video/audio file and extract subtitles or transcribe.
+    
+    This uses VideoSubtitleLoader with:
+    - Subtitle extraction (SRT, VTT, ASS formats)
+    - Whisper audio transcription (fallback)
+    - Semantic segmentation of transcript
+    
+    Args:
+        file_path: Path to video/audio file.
+        extract_subtitles: Extract embedded subtitles.
+        transcribe_audio: Transcribe audio if no subtitles.
+        whisper_model: Whisper model size.
+        language: Language code.
+        semantic_segmentation: Apply semantic segmentation.
+        
+    Returns:
+        Dict with full_text, subtitles, segments, and metadata.
+    """
+    loader = VideoSubtitleLoader(
+        extract_subtitles=extract_subtitles,
+        transcribe_audio=transcribe_audio,
+        whisper_model=whisper_model,
+        language=language,
+        semantic_segmentation=semantic_segmentation,
     )
     return loader.load(file_path)
 
@@ -307,8 +489,14 @@ __all__ = [
     'DocxLoader',
     'PptxLoader',
     'XlsxLoader',
+    'AdvancedPdfLoader',
+    'EnhancedPptxLoader',
+    'VideoSubtitleLoader',
     'load_pdf',
+    'load_pdf_advanced',
     'load_docx',
     'load_pptx',
+    'load_pptx_enhanced',
     'load_xlsx',
+    'load_video',
 ]

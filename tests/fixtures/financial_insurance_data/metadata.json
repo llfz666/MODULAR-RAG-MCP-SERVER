@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-03-15T09:26:15.751813",
+  "description": "Synthetic financial insurance test data for document loader testing",
+  "files": {
+    "pdf": "tests\\fixtures\\financial_insurance_data\\insurance_report_multicolumn.pdf",
+    "pptx": "tests\\fixtures\\financial_insurance_data\\insurance_presentation.pptx",
+    "docx": "tests\\fixtures\\financial_insurance_data\\insurance_policy.docx",
+    "xlsx": "tests\\fixtures\\financial_insurance_data\\financial_data.xlsx",
+    "srt": "tests\\fixtures\\financial_insurance_data\\sample_video_subtitles.srt"
+  },
+  "features_to_test": [
+    "PDF multi-column layout analysis",
+    "PDF table recognition",
+    "PPTX speaker notes extraction",
+    "PPTX image OCR",
+    "DOCX complex formatting",
+    "XLSX formulas and data",
+    "SRT subtitle parsing"
+  ],
+  "note": "This is SYNTHETIC data for testing purposes only"
+}

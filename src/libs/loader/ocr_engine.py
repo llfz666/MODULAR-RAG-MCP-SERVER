@@ -78,18 +78,36 @@ class PaddleOCREngine(BaseOCREngine):
             det_model_dir: Custom detection model directory.
             rec_model_dir: Custom recognition model directory.
         """
+        # Lazy import to avoid PaddleX initialization conflicts
+        self._ocr = None
+        self._available = False
+        self._lang = lang
+        self._use_angle_cls = use_angle_cls
+        self._use_gpu = use_gpu
+        self._show_log = show_log
+        self._det_model_dir = det_model_dir
+        self._rec_model_dir = rec_model_dir
+        
+        # Try to initialize lazily
+        self._lazy_init()
+    
+    def _lazy_init(self):
+        """Lazy initialize PaddleOCR."""
+        if self._ocr is not None:
+            return
+        
         try:
             from paddleocr import PaddleOCR
             self._ocr = PaddleOCR(
-                use_angle_cls=use_angle_cls,
-                lang=lang,
-                use_gpu=use_gpu,
-                show_log=show_log,
-                det_model_dir=det_model_dir,
-                rec_model_dir=rec_model_dir,
+                use_angle_cls=self._use_angle_cls,
+                lang=self._lang,
+                use_gpu=self._use_gpu,
+                show_log=self._show_log,
+                det_model_dir=self._det_model_dir,
+                rec_model_dir=self._rec_model_dir,
             )
             self._available = True
-        except ImportError as e:
+        except Exception as e:
             logger.warning(f"PaddleOCR not available: {e}")
             self._available = False
             self._ocr = None

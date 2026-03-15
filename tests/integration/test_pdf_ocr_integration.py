@@ -40,11 +40,18 @@ class TestPdfLoaderWithOcr:
         except ImportError:
             pytest.skip("PyMuPDF not installed")
         
-        # Create a simple PDF with text
+        # Create a simple PDF with text (need > 100 chars to pass ocr_threshold)
         pdf_path = tmp_path / "test_text.pdf"
         doc = fitz.open()
         page = doc.new_page()
-        page.insert_text((50, 50), "Hello World! This is a test PDF with text content.")
+        # Add enough text to exceed the ocr_threshold (100 characters)
+        long_text = (
+            "Hello World! This is a test PDF with text content. "
+            "It contains multiple sentences to ensure we have enough characters. "
+            "The quick brown fox jumps over the lazy dog. "
+            "This is additional text to make sure we pass the threshold."
+        )
+        page.insert_text((50, 50), long_text)
         doc.save(pdf_path)
         doc.close()
         
@@ -81,12 +88,19 @@ class TestPdfLoaderWithOcr:
         except ImportError:
             pytest.skip("PyMuPDF not installed")
         
-        # Create a PDF with text
+        # Create a PDF with text (need > 100 chars to pass ocr_threshold)
         pdf_path = tmp_path / "test_load.pdf"
         doc = fitz.open()
         page = doc.new_page()
-        page.insert_text((50, 50), "Hello World! This is a test document.")
-        page.insert_text((50, 100), "It has multiple lines of text.")
+        # Add enough text to exceed the ocr_threshold (100 characters)
+        long_text = (
+            "Hello World! This is a test document. "
+            "It has multiple lines of text. "
+            "The quick brown fox jumps over the lazy dog. "
+            "This is additional content to ensure we pass the threshold check."
+        )
+        page.insert_text((50, 50), long_text)
+        page.insert_text((50, 100), "More text here for good measure.")
         doc.save(pdf_path)
         doc.close()
         
@@ -115,15 +129,17 @@ class TestPdfLoaderWithOcr:
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='PNG')
         img_bytes.seek(0)
+        image_data = img_bytes.read()
         
         doc = fitz.open()
         page = doc.new_page()
         page.insert_text((50, 50), "PDF with image")
         
-        # Insert image into PDF
+        # Insert image into PDF using new PyMuPDF 1.27+ API
+        # Use insert_image with bytes directly
         page.insert_image(
             page.rect,
-            pixmap=fitz.Pixmap(fitz.Colorspace(fitz.CS_RGB), img.tobytes())
+            stream=image_data
         )
         doc.save(pdf_path)
         doc.close()
